@@ -88,14 +88,16 @@ app.post("/login", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   const client = new MongoClient(uri);
+  const userBirth = req.query.userBirthDate;
 
   try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const returnedUsers = await users.find().toArray();
-    res.send(returnedUsers);
+    const query = { birth_year: { $eq: userBirth } };
+    const foundUsers = await users.find(query).toArray();
+    res.send(foundUsers);
   } finally {
     await client.close();
   }
