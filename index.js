@@ -1,3 +1,4 @@
+const dotenv = require("dotenv").config();
 const PORT = 8000;
 const express = require("express");
 const { MongoClient } = require("mongodb");
@@ -7,7 +8,9 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 
 const uri =
-  "mongodb+srv://mmierzynski:zxc567@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
+  "mongodb+srv://$" +
+  process.env.DB_LOGIN +
+  "@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
 
 const app = express();
 app.use(cors());
@@ -88,14 +91,15 @@ app.post("/login", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   const client = new MongoClient(uri);
-  const userBirth = req.query.userBirthDate;
+  const filters = req.query.userBirthDate;
+  console.log(filters);
 
   try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = { birth_year: { $eq: userBirth } };
+    const query = { birth_year: { $eq: 1999 } };
     const foundUsers = await users.find(query).toArray();
     res.send(foundUsers);
   } finally {
