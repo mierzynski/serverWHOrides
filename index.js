@@ -1,4 +1,4 @@
-require("dotenv").config();
+const dotenv = require("dotenv").config();
 const PORT = 8000;
 const express = require("express");
 const { MongoClient } = require("mongodb");
@@ -11,9 +11,6 @@ const uri =
   "mongodb+srv://" +
   process.env.DB_LOGIN +
   "@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
-
-const uriHard =
-  "mongodb+srv://mmierzynski:zxc567@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
 
 const app = express();
 app.use(cors());
@@ -95,7 +92,7 @@ app.post("/login", async (req, res) => {
 // app.put('/users', async(req, res) => {
 //   const client = new MongoClient(uri)
 //   const userData = req.body.userData
-  
+
 //   try{
 //     await client.connect()
 //     const database = client.db("app-data")
@@ -103,7 +100,7 @@ app.post("/login", async (req, res) => {
 
 //     const query = {user_id: userData.user_id}
 //     const updateDocument = {
-//       $set: { 
+//       $set: {
 //         userLocation: userData.userLocation,
 //         description: userData.description,
 //         userRangeStart: userData.userRangeStart,
@@ -119,13 +116,6 @@ app.post("/login", async (req, res) => {
 //     await client.close()
 //   }
 // })
-
-
-
-
-
-
-
 
 app.get("/users", async (req, res) => {
   const client = new MongoClient(uri);
