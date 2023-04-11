@@ -1,4 +1,4 @@
-const dotenv = require("dotenv").config();
+require("dotenv").config();
 const PORT = 8000;
 const express = require("express");
 const { MongoClient } = require("mongodb");
@@ -8,9 +8,12 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 
 const uri =
-  "mongodb+srv://$" +
+  "mongodb+srv://" +
   process.env.DB_LOGIN +
   "@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
+
+const uriHard =
+  "mongodb+srv://mmierzynski:zxc567@cluster0.bzfxhwx.mongodb.net/?retryWrites=true&w=majority";
 
 const app = express();
 app.use(cors());
