@@ -120,7 +120,6 @@ app.post("/login", async (req, res) => {
 app.get("/users", async (req, res) => {
   const client = new MongoClient(uri);
   const filters = req.query.userBirthDate;
-  console.log(filters);
 
   try {
     await client.connect();
@@ -130,6 +129,63 @@ app.get("/users", async (req, res) => {
     const query = { birth_year: { $eq: 1999 } };
     const foundUsers = await users.find(query).toArray();
     res.send(foundUsers);
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/correspondingusers", async (req, res) => {
+  const client = new MongoClient(uri);
+  const tmpArrayCorrespondingUsers = req.query.tmpArrayCorrespondingUsers;
+  console.log(tmpArrayCorrespondingUsers);
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: { $eq: tmpArrayCorrespondingUsers[0] } };
+    const foundUsers = await users.find(query).toArray();
+    res.send(foundUsers);
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/messages", async (req, res) => {
+  const { userId, correspondingUserId } = req.query;
+  const client = new MongoClient(uri);
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const messages = database.collection("messages");
+
+    const query = {
+      from_userId: userId,
+      to_userId: correspondingUserId,
+    };
+    const foundMessages = await messages.find(query).toArray();
+    res.send(foundMessages);
+    console.log(foundMessages);
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/chats", async (req, res) => {
+  const client = new MongoClient(uri);
+  const userId = req.query.userId;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("chats");
+
+    const query = { chatId: { $regex: userId } };
+
+    const foundChats = await users.find(query).toArray();
+    res.send(foundChats);
   } finally {
     await client.close();
   }
