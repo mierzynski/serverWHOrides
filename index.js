@@ -191,4 +191,50 @@ app.get("/chats", async (req, res) => {
   }
 });
 
+app.post("/message", async (req, res) => {
+  const client = new MongoClient(uri);
+  const message = req.body.message;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const chats = database.collection("chats");
+
+    const insertedMessage = await chats.findOneAndUpdate(
+      { chatId: message.chatId },
+      {
+        $push: {
+          messages: {
+            date: message.date,
+            msg: message.message,
+            sender_id: message.sender_id,
+            sender_name: message.sender_name,
+          },
+        },
+      }
+    );
+    res.send(insertedMessage);
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/currentchat", async (req, res) => {
+  const client = new MongoClient(uri);
+  const chatId = req.query.chatId;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("chats");
+
+    const query = { chatId: chatId };
+
+    const foundChat = await users.findOne(query);
+    res.send(foundChat);
+  } finally {
+    await client.close();
+  }
+});
+
 app.listen(PORT, () => console.log("Server running on PORT " + PORT));
