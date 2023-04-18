@@ -132,18 +132,103 @@ app.get("/findusers", async (req, res) => {
         { birth_year: { $lte: parseInt(filters.birth_min) } },
       ],
     };
-
+    // do dokonczenia
     if (filters.bike_types) {
+      if (filters.bike_types[0]) {
+        if (filters.bike_types[1]) {
+          if (filters.bike_types[2]) {
+            query.$and.push({
+              $or: [
+                { bike_types: filters.bike_types[0] },
+                { bike_types: filters.bike_types[1] },
+                { bike_types: filters.bike_types[2] },
+              ],
+            });
+          } else {
+            query.$and.push({
+              $or: [
+                { bike_types: filters.bike_types[0] },
+                { bike_types: filters.bike_types[1] },
+              ],
+            });
+          }
+        } else {
+          query.$and.push({ bike_types: filters.bike_types[0] });
+        }
+      }
+      if (filters.bike_types[1]) {
+        if (filters.bike_types[2]) {
+          query.$and.push({
+            $or: [
+              { bike_types: filters.bike_types[1] },
+              { bike_types: filters.bike_types[2] },
+            ],
+          });
+        } else {
+          query.$and.push({ bike_types: filters.bike_types[2] });
+        }
+      }
+      if (filters.bike_types[2]) {
+        query.$and.push({ bike_types: filters.bike_types[2] });
+      }
+    }
+    if (filters.surface_types) {
+      if (filters.surface_types[0]) {
+        if (filters.surface_types[1]) {
+          if (filters.surface_types[2]) {
+            query.$and.push({
+              $or: [
+                { surface_types: filters.surface_types[0] },
+                { surface_types: filters.surface_types[1] },
+                { surface_types: filters.surface_types[2] },
+              ],
+            });
+          } else {
+            query.$and.push({
+              $or: [
+                { surface_types: filters.surface_types[0] },
+                { surface_types: filters.surface_types[1] },
+              ],
+            });
+          }
+        } else {
+          query.$and.push({ surface_types: filters.surface_types[0] });
+        }
+      }
+      if (filters.surface_types[1]) {
+        if (filters.surface_types[2]) {
+          query.$and.push({
+            $or: [
+              { surface_types: filters.surface_types[1] },
+              { surface_types: filters.surface_types[2] },
+            ],
+          });
+        } else {
+          query.$and.push({ surface_types: filters.surface_types[2] });
+        }
+      }
+      if (filters.surface_types[2]) {
+        query.$and.push({ surface_types: filters.surface_types[2] });
+      }
+    }
+    if (filters.distance_min) {
       query.$and.push({
-        $or: [
-          { bike_types: filters.bike_types[0] },
-          { bike_types: filters.bike_types[1] },
-          { bike_types: filters.bike_types[2] },
+        $and: [
+          { distance_min: { $lte: filters.distance_min } },
+          { distance_max: { $gte: filters.distance_max } },
         ],
       });
     }
-    if (filters.distance_min) {
-      query.$and.push({ distance_min: { $gte: filters.distance_min } });
+    if (filters.pace_min) {
+      query.$and.push({
+        $and: [
+          { pace_min: { $lte: filters.pace_min } },
+          { pace_max: { $gte: filters.pace_max } },
+        ],
+      });
+    }
+    if (filters.location) {
+      query.$and.push({ location: filters.location });
     }
 
     const foundUsers = await users.find(query).toArray();
