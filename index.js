@@ -117,18 +117,38 @@ app.post("/login", async (req, res) => {
 //   }
 // })
 
-app.get("/users", async (req, res) => {
+app.get("/findusers", async (req, res) => {
   const client = new MongoClient(uri);
-  const filters = req.query.userBirthDate;
+  const filters = req.query.filters;
 
   try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = { birth_year: { $eq: 1999 } };
+    const query = {
+      $and: [
+        { birth_year: { $gte: parseInt(filters.birth_max) } },
+        { birth_year: { $lte: parseInt(filters.birth_min) } },
+      ],
+    };
+
+    if (filters.bike_types) {
+      query.$and.push({
+        $or: [
+          { bike_types: filters.bike_types[0] },
+          { bike_types: filters.bike_types[1] },
+          { bike_types: filters.bike_types[2] },
+        ],
+      });
+    }
+    if (filters.distance_min) {
+      query.$and.push({ distance_min: { $gte: filters.distance_min } });
+    }
+
     const foundUsers = await users.find(query).toArray();
     res.send(foundUsers);
+    console.log(foundUsers);
   } finally {
     await client.close();
   }
