@@ -91,24 +91,27 @@ app.post("/login", async (req, res) => {
 
 app.put('/users', async(req, res) => {
   const client = new MongoClient(uri)
-  const userData = req.body.userData
+  const {user, userLocation, description, userRangeStart, userRangeEnd, userAveragePaceStart, userAveragePaceEnd} = req.body;
 
   try{
     await client.connect()
     const database = client.db("app-data")
     const users = database.collection("users")
 
-    const query = {user_id: userData.user_id}
+    const query = {user_id: user}
     const data = {
+      $set: {
         location: userLocation,
         description: description,
         rangeStart: userRangeStart,
         rangeEnd: userRangeEnd,
-        averangePaceStart: userAverangePaceStart,
-        averangePaceEnd: userAverangePaceEnd
+        averangePaceStart: userAveragePaceStart,
+        averangePaceEnd: userAveragePaceEnd
+      }
     }
-    const insertUser = await users.updateOne(query, updateDocument)
+    const insertUser = await users.updateOne(query, data)
     res.send(insertUser)
+    // const insertedUser = await users.insertOne(data);
   }
   finally {
     await client.close()
