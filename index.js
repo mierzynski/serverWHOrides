@@ -396,7 +396,8 @@ app.post("/newchat", async (req, res) => {
     const chats = database.collection("chats");
 
     const insertChat = await chats.insertOne(chat);
-    res.send(insertChat);
+    const foundChat = await chats.findOne({ chatId: chat.chatId });
+    res.status(201).json({ chat: foundChat });
   } finally {
     await client.close();
   }
