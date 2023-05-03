@@ -78,7 +78,9 @@ app.post("/login", async (req, res) => {
       const token = jwt.sign(user, email, {
         expiresIn: 60 * 24,
       });
-      res.status(201).json({ token, userId: user.user_id });
+      res
+        .status(201)
+        .json({ token, userId: user.user_id, userName: user.name });
     }
 
     res.status(400).json("Invalid Credentials");
@@ -89,16 +91,24 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.put('/users', async(req, res) => {
-  const client = new MongoClient(uri)
-  const {user, userLocation, description, userRangeStart, userRangeEnd, userAveragePaceStart, userAveragePaceEnd} = req.body;
+app.put("/users", async (req, res) => {
+  const client = new MongoClient(uri);
+  const {
+    user,
+    userLocation,
+    description,
+    userRangeStart,
+    userRangeEnd,
+    userAveragePaceStart,
+    userAveragePaceEnd,
+  } = req.body;
 
-  try{
-    await client.connect()
-    const database = client.db("app-data")
-    const users = database.collection("users")
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
 
-    const query = {user_id: user}
+    const query = { user_id: user };
     const data = {
       $set: {
         location: userLocation,
@@ -106,17 +116,16 @@ app.put('/users', async(req, res) => {
         rangeStart: userRangeStart,
         rangeEnd: userRangeEnd,
         averangePaceStart: userAveragePaceStart,
-        averangePaceEnd: userAveragePaceEnd
-      }
-    }
-    const insertUser = await users.updateOne(query, data)
-    res.send(insertUser)
+        averangePaceEnd: userAveragePaceEnd,
+      },
+    };
+    const insertUser = await users.updateOne(query, data);
+    res.send(insertUser);
     // const insertedUser = await users.insertOne(data);
+  } finally {
+    await client.close();
   }
-  finally {
-    await client.close()
-  }
-})
+});
 
 app.get("/findusers", async (req, res) => {
   const client = new MongoClient(uri);
@@ -234,7 +243,6 @@ app.get("/findusers", async (req, res) => {
 
     const foundUsers = await users.find(query).toArray();
     res.send(foundUsers);
-    console.log(foundUsers);
   } finally {
     await client.close();
   }
@@ -338,6 +346,77 @@ app.get("/currentchat", async (req, res) => {
 
     const foundChat = await users.findOne(query);
     res.send(foundChat);
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/friends", async (req, res) => {
+  const client = new MongoClient(uri);
+  const userId = req.query.userId;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const queryFriendsIds = { user_id: { $eq: userId } };
+
+    const foundUserFriendsIds = await users.findOne(queryFriendsIds, {
+      projection: { friends: 1, _id: 0 },
+    });
+
+    const acceptedFriends = await users
+      .find({ user_id: { $in: foundUserFriendsIds.friends }, friends: userId })
+      .toArray();
+
+    const pendingFriends = await users
+      .find({
+        user_id: { $not: { $in: foundUserFriendsIds.friends } },
+        friends: userId,
+      })
+      .toArray();
+
+    res.send({
+      pendingFriends: pendingFriends,
+      acceptedFriends: acceptedFriends,
+    });
+  } finally {
+    await client.close();
+  }
+});
+
+app.post("/newchat", async (req, res) => {
+  const client = new MongoClient(uri);
+  const chat = req.body.newChat;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const chats = database.collection("chats");
+
+    const insertChat = await chats.insertOne(chat);
+    res.send(insertChat);
+  } finally {
+    await client.close();
+  }
+});
+
+app.put("/invitefriend", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { userId, invitedUserId } = req.body;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: userId };
+    const updateDocument = {
+      $push: { friends: invitedUserId },
+    };
+    const user = await users.updateOne(query, updateDocument);
+    res.send(user);
   } finally {
     await client.close();
   }
