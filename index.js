@@ -386,6 +386,30 @@ app.get("/friends", async (req, res) => {
   }
 });
 
+app.get("/ispendingfriend", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { userId, friendId } = req.query;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: { $eq: userId } };
+
+    const foundUserFriendsIds = await users.findOne(queryFriendsIds, {
+      projection: { friends: 1, _id: 0 },
+    });
+
+    res.send({
+      pendingFriends: pendingFriends,
+      acceptedFriends: acceptedFriends,
+    });
+  } finally {
+    await client.close();
+  }
+});
+
 app.post("/newchat", async (req, res) => {
   const client = new MongoClient(uri);
   const chat = req.body.newChat;
@@ -418,6 +442,28 @@ app.put("/invitefriend", async (req, res) => {
     };
     const user = await users.updateOne(query, updateDocument);
     res.send(user);
+  } finally {
+    await client.close();
+  }
+});
+
+app.put("/acceptfriend", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { user, friendId } = req.body;
+  console.log(user);
+  console.log(friendId);
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: user };
+    const updateDocument = {
+      $push: { friends: friendId },
+    };
+    const updateFriend = await users.updateOne(query, updateDocument);
+    res.send(updateFriend);
   } finally {
     await client.close();
   }
