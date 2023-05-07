@@ -94,7 +94,7 @@ app.post("/login", async (req, res) => {
 app.put("/users", async (req, res) => {
   const client = new MongoClient(uri);
   const {
-    user,
+    userId,
     userLocation,
     description,
     userRangeStart,
@@ -108,7 +108,7 @@ app.put("/users", async (req, res) => {
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = { user_id: user };
+    const query = { user_id: userId };
     const data = {
       $set: {
         location: userLocation,
@@ -121,11 +121,28 @@ app.put("/users", async (req, res) => {
     };
     const insertUser = await users.updateOne(query, data);
     res.send(insertUser);
-    // const insertedUser = await users.insertOne(data);
+    //const insertedUser = await users.insertOne(data);
   } finally {
     await client.close();
   }
 });
+
+app.get("/users", async (req, res) => {
+  const client = new MongoClient(uri);
+  const userId = req.query.userId
+
+  try{
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: userId}
+    const user = await users.findOne(query)
+    res.send(user)
+  } finally {
+    await client.close()
+  }
+})
 
 app.get("/findusers", async (req, res) => {
   const client = new MongoClient(uri);
