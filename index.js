@@ -43,6 +43,15 @@ app.post("/signup", async (req, res) => {
       name: name,
       birth_year: birthDate,
       location: location,
+      rates: [],
+      comments: [],
+      bike_types: ["", "", ""],
+      surface_types: ["", "", ""],
+      distance_max: "",
+      distance_min: "",
+      pace_max: "",
+      pace_min: "",
+      friends: [],
     };
     const insertedUser = await users.insertOne(data);
 
@@ -129,24 +138,25 @@ app.put("/users", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   const client = new MongoClient(uri);
-  const userId = req.query.userId
+  const userId = req.query.userId;
 
-  try{
+  try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = { user_id: userId}
-    const user = await users.findOne(query)
-    res.send(user)
+    const query = { user_id: userId };
+    const user = await users.findOne(query);
+    res.send(user);
   } finally {
-    await client.close()
+    await client.close();
   }
-})
+});
 
 app.get("/findusers", async (req, res) => {
   const client = new MongoClient(uri);
   const filters = req.query.filters;
+  console.log(filters);
 
   try {
     await client.connect();
@@ -467,8 +477,6 @@ app.put("/invitefriend", async (req, res) => {
 app.put("/acceptfriend", async (req, res) => {
   const client = new MongoClient(uri);
   const { user, friendId } = req.body;
-  console.log(user);
-  console.log(friendId);
 
   try {
     await client.connect();
