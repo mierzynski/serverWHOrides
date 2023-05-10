@@ -106,10 +106,10 @@ app.put("/users", async (req, res) => {
     userId,
     userLocation,
     description,
-    userRangeStart,
-    userRangeEnd,
-    userAveragePaceStart,
-    userAveragePaceEnd,
+    distance_min,
+    distance_max,
+    pace_min,
+    pace_max,
   } = req.body;
 
   try {
@@ -122,10 +122,10 @@ app.put("/users", async (req, res) => {
       $set: {
         location: userLocation,
         description: description,
-        rangeStart: userRangeStart,
-        rangeEnd: userRangeEnd,
-        averangePaceStart: userAveragePaceStart,
-        averangePaceEnd: userAveragePaceEnd,
+        distance_min: distance_min,
+        distance_max: distance_max,
+        pace_min: pace_min,
+        pace_max: pace_max,
       },
     };
     const insertUser = await users.updateOne(query, data);
