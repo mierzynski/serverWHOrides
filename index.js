@@ -104,7 +104,7 @@ app.put("/users", async (req, res) => {
   const client = new MongoClient(uri);
   const {
     userId,
-    userLocation,
+    location,
     description,
     distance_min,
     distance_max,
@@ -120,7 +120,7 @@ app.put("/users", async (req, res) => {
     const query = { user_id: userId };
     const data = {
       $set: {
-        location: userLocation,
+        location: location,
         description: description,
         distance_min: distance_min,
         distance_max: distance_max,
