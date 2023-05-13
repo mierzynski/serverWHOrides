@@ -41,7 +41,7 @@ app.post("/signup", async (req, res) => {
       email: sanitizedEmail,
       hashed_password: hashedPassword,
       name: name,
-      birth_year: birthDate,
+      birth_year: parseInt(birthDate),
       location: location,
       rates: [],
       comments: [],
@@ -156,120 +156,97 @@ app.get("/users", async (req, res) => {
 app.get("/findusers", async (req, res) => {
   const client = new MongoClient(uri);
   const filters = req.query.filters;
-  console.log(filters);
 
   try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = {
+    const queryAge = {
       $and: [
         { birth_year: { $gte: parseInt(filters.birth_max) } },
         { birth_year: { $lte: parseInt(filters.birth_min) } },
       ],
     };
-    // do dokonczenia
-    if (filters.bike_types) {
-      if (filters.bike_types[0]) {
-        if (filters.bike_types[1]) {
-          if (filters.bike_types[2]) {
-            query.$and.push({
-              $or: [
-                { bike_types: filters.bike_types[0] },
-                { bike_types: filters.bike_types[1] },
-                { bike_types: filters.bike_types[2] },
-              ],
-            });
-          } else {
-            query.$and.push({
-              $or: [
-                { bike_types: filters.bike_types[0] },
-                { bike_types: filters.bike_types[1] },
-              ],
-            });
-          }
-        } else {
-          query.$and.push({ bike_types: filters.bike_types[0] });
-        }
-      }
-      if (filters.bike_types[1]) {
-        if (filters.bike_types[2]) {
-          query.$and.push({
-            $or: [
-              { bike_types: filters.bike_types[1] },
-              { bike_types: filters.bike_types[2] },
-            ],
-          });
-        } else {
-          query.$and.push({ bike_types: filters.bike_types[2] });
-        }
-      }
-      if (filters.bike_types[2]) {
-        query.$and.push({ bike_types: filters.bike_types[2] });
-      }
-    }
-    if (filters.surface_types) {
-      if (filters.surface_types[0]) {
-        if (filters.surface_types[1]) {
-          if (filters.surface_types[2]) {
-            query.$and.push({
-              $or: [
-                { surface_types: filters.surface_types[0] },
-                { surface_types: filters.surface_types[1] },
-                { surface_types: filters.surface_types[2] },
-              ],
-            });
-          } else {
-            query.$and.push({
-              $or: [
-                { surface_types: filters.surface_types[0] },
-                { surface_types: filters.surface_types[1] },
-              ],
-            });
-          }
-        } else {
-          query.$and.push({ surface_types: filters.surface_types[0] });
-        }
-      }
-      if (filters.surface_types[1]) {
-        if (filters.surface_types[2]) {
-          query.$and.push({
-            $or: [
-              { surface_types: filters.surface_types[1] },
-              { surface_types: filters.surface_types[2] },
-            ],
-          });
-        } else {
-          query.$and.push({ surface_types: filters.surface_types[2] });
-        }
-      }
-      if (filters.surface_types[2]) {
-        query.$and.push({ surface_types: filters.surface_types[2] });
-      }
-    }
-    if (filters.distance_min) {
-      query.$and.push({
-        $and: [
-          { distance_min: { $lte: filters.distance_min } },
-          { distance_max: { $gte: filters.distance_max } },
-        ],
-      });
-    }
-    if (filters.pace_min) {
-      query.$and.push({
-        $and: [
-          { pace_min: { $lte: filters.pace_min } },
-          { pace_max: { $gte: filters.pace_max } },
-        ],
-      });
-    }
-    if (filters.location) {
-      query.$and.push({ location: filters.location });
-    }
 
-    const foundUsers = await users.find(query).toArray();
-    res.send(foundUsers);
+    const usersByAge = await users.find(queryAge).toArray();
+
+    let filteredUsers_partOne = usersByAge.filter(function (el) {
+      if (
+        el.location &&
+        el.distance_max &&
+        el.distance_min &&
+        el.pace_max &&
+        el.pace_min
+      ) {
+        return (
+          el.location == filters.location &&
+          el.distance_max <= filters.distance_max &&
+          el.distance_min >= filters.distance_min &&
+          el.pace_max <= filters.pace_max &&
+          el.pace_min >= filters.pace_min
+        );
+      } else if (
+        el.location &&
+        el.distance_max &&
+        el.distance_min &&
+        el.pace_max
+      ) {
+        return (
+          el.location == filters.location &&
+          el.distance_max <= filters.distance_max &&
+          el.distance_min >= filters.distance_min &&
+          el.pace_max <= filters.pace_max
+        );
+      } else if (el.location && el.distance_max && el.distance_min) {
+        return (
+          el.location == filters.location &&
+          el.distance_max <= filters.distance_max &&
+          el.distance_min >= filters.distance_min
+        );
+      } else if (el.location && el.distance_max) {
+        return (
+          el.location == filters.location &&
+          el.distance_max <= filters.distance_max
+        );
+      } else if (el.location) {
+        return el.location == filters.location;
+      }
+    });
+    // let filteredUsers_full = usersByAge.filter(function (el) {
+    //   const containTypes = (element) =>
+    //     element === "road" || element === "gravel" || element === "mtb";
+    //   let notEmptyBikeTypes = [];
+    //   let notEmptySurfaceTypes = [];
+    //   if (
+    //     filters.bike_types[0] + filters.bike_types[1] + filters.bike_types[2] !=
+    //     ""
+    //   ) {
+    //     notEmptyBikeTypes = filters.bike_types.filter(containTypes);
+    //   }
+    //   if (
+    //     filters.surface_types[0] +
+    //       filters.surface_types[1] +
+    //       filters.surface_types[2] !=
+    //     ""
+    //   ) {
+    //     notEmptySurfaceTypes = filters.surface_types.filter(containTypes);
+    //   }
+
+    //   if (notEmptyBikeTypes.length != 0 && notEmptySurfaceTypes.length != 0) {
+    //     console.log("not empty");
+    //   } else if (notEmptyBikeTypes.length != 0) {
+    //     console.log(el.bike_types);
+    //   } else if (notEmptySurfaceTypes.length != 0) {
+    //     console.log("not empty surface types");
+    //   }
+    // });
+
+    if (filteredUsers_partOne.length > 0) {
+      res.send(filteredUsers_partOne);
+    } else {
+      res.send(usersByAge);
+    }
   } finally {
     await client.close();
   }
