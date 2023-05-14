@@ -16,6 +16,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+var bodyParser = require("body-parser");
+var jsonParser = bodyParser.json({
+  limit: 1024 * 1024 * 20,
+  type: "application/json",
+});
+var urlencodedParser = bodyParser.urlencoded({
+  extended: true,
+  limit: 1024 * 1024 * 20,
+  type: "application/x-www-form-urlencoded",
+});
+
+app.use(jsonParser);
+app.use(urlencodedParser);
+
 app.post("/signup", async (req, res) => {
   const client = new MongoClient(uri);
   const { email, password, birthDate, name, location } = req.body;
@@ -236,17 +250,82 @@ app.get("/findusers", async (req, res) => {
     //   if (notEmptyBikeTypes.length != 0 && notEmptySurfaceTypes.length != 0) {
     //     console.log("not empty");
     //   } else if (notEmptyBikeTypes.length != 0) {
-    //     console.log(el.bike_types);
+    //     if (el.bike_types) {
+    //       return (
+    //         el.bike_types[0] == "road" ||
+    //         el.bike_types[1] == "gravel" ||
+    //         el.bike_types[2] == "mtb"
+    //       );
+    //     }
     //   } else if (notEmptySurfaceTypes.length != 0) {
     //     console.log("not empty surface types");
     //   }
     // });
+
+    // console.log(filteredUsers_full);
 
     if (filteredUsers_partOne.length > 0) {
       res.send(filteredUsers_partOne);
     } else {
       res.send(usersByAge);
     }
+  } finally {
+    await client.close();
+  }
+});
+
+app.post("/createevent", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { detailsObj } = req.body;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const events = database.collection("events");
+
+    // const existingEvent = await users.findOne({ _id: detailsObj._id });
+
+    // if (existingUser) {
+    //   return res.status(409).send("Event already exist");
+    // }
+
+    const data = {
+      title: detailsObj.title,
+      author_id: detailsObj.author_id,
+      meeting_date: detailsObj.meeting_date,
+      participants: detailsObj.participants,
+      distance: parseInt(detailsObj.distance),
+      avg_pace: parseInt(detailsObj.avg_pace),
+      surface: detailsObj.surface,
+      location: detailsObj.startLocation,
+      description: detailsObj.description,
+      map_img: detailsObj.map_img,
+      is_public: detailsObj.isPublic,
+    };
+    const insertedEvent = await events.insertOne(data);
+
+    res.status(201);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.get("/findevents", async (req, res) => {
+  const client = new MongoClient(uri);
+  const filters = req.query.filters;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("events");
+
+    const queryLocation = { location: "Poznań" };
+
+    const eventsByLocation = await users.find(queryLocation).toArray();
+
+    const events = await users.find().toArray();
+
+    res.send(events);
   } finally {
     await client.close();
   }
