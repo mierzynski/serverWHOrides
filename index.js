@@ -564,6 +564,49 @@ app.post("/newchat", async (req, res) => {
   }
 });
 
+app.put("/createcomment", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { newComment, ratedUserId } = req.body;
+  let isExist = false;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: ratedUserId.ratedUserId };
+    const updateRates = {
+      $push: { rates: newComment.rate },
+    };
+
+    const updateComments = {
+      $push: { comments: newComment },
+    };
+
+    const user = await users.findOne(query);
+
+    if (user) {
+      user.comments.forEach((element) => {
+        if (element.user_id == newComment.user_id) {
+          isExist = true;
+        }
+      });
+    }
+
+    console.log(newComment);
+
+    if (isExist) {
+      res.send("Comment already exist");
+    } else {
+      const addComment = await users.updateOne(query, updateComments);
+      const addRate = await users.updateOne(query, updateRates);
+      res.send("Done");
+    }
+  } finally {
+    await client.close();
+  }
+});
+
 app.put("/invitefriend", async (req, res) => {
   const client = new MongoClient(uri);
   const { userId, invitedUserId } = req.body;
