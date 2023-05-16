@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+var bodyParser = require("body-parser");
 
 const uri =
   "mongodb+srv://" +
@@ -14,21 +15,7 @@ const uri =
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-
-var bodyParser = require("body-parser");
-var jsonParser = bodyParser.json({
-  limit: 1024 * 1024 * 20,
-  type: "application/json",
-});
-var urlencodedParser = bodyParser.urlencoded({
-  extended: true,
-  limit: 1024 * 1024 * 20,
-  type: "application/x-www-form-urlencoded",
-});
-
-app.use(jsonParser);
-app.use(urlencodedParser);
+app.use(express.json({ limit: 52428800 }));
 
 app.post("/signup", async (req, res) => {
   const client = new MongoClient(uri);
@@ -304,7 +291,7 @@ app.post("/createevent", async (req, res) => {
     };
     const insertedEvent = await events.insertOne(data);
 
-    res.status(201);
+    res.status(insertedEvent);
   } catch (err) {
     console.log(err);
   }
@@ -319,13 +306,76 @@ app.get("/findevents", async (req, res) => {
     const database = client.db("app-data");
     const users = database.collection("events");
 
-    const queryLocation = { location: "Poznań" };
-
-    const eventsByLocation = await users.find(queryLocation).toArray();
-
     const events = await users.find().toArray();
 
-    res.send(events);
+    if (filters) {
+      const filteredEvents = events.filter(function (el) {
+        if (
+          filters.distanceMin &&
+          filters.distanceMax &&
+          filters.avgPaceMin &&
+          filters.avgPaceMax &&
+          filters.surface &&
+          filters.startLocation
+        ) {
+          return (
+            el.distance >= filters.distanceMin &&
+            el.distance <= filters.distanceMax &&
+            el.avg_pace >= filters.avgPaceMin &&
+            el.avg_pace <= filters.avgPaceMax &&
+            el.surface == filters.surface &&
+            el.location == filters.startLocation
+          );
+        } else if (
+          filters.distanceMin &&
+          filters.distanceMax &&
+          filters.avgPaceMin &&
+          filters.avgPaceMax &&
+          filters.surface
+        ) {
+          return (
+            el.distance >= filters.distanceMin &&
+            el.distance <= filters.distanceMax &&
+            el.avg_pace >= filters.avgPaceMin &&
+            el.avg_pace <= filters.avgPaceMax &&
+            el.surface == filters.surface
+          );
+        } else if (
+          filters.distanceMin &&
+          filters.distanceMax &&
+          filters.avgPaceMin &&
+          filters.avgPaceMax
+        ) {
+          return (
+            el.distance >= filters.distanceMin &&
+            el.distance <= filters.distanceMax &&
+            el.avg_pace >= filters.avgPaceMin &&
+            el.avg_pace <= filters.avgPaceMax
+          );
+        } else if (
+          filters.distanceMin &&
+          filters.distanceMax &&
+          filters.avgPaceMin
+        ) {
+          return (
+            el.distance >= filters.distanceMin &&
+            el.distance <= filters.distanceMax &&
+            el.avg_pace >= filters.avgPaceMin
+          );
+        } else if (filters.distanceMin && filters.distanceMax) {
+          return (
+            el.distance >= filters.distanceMin &&
+            el.distance <= filters.distanceMax
+          );
+        } else if (filters.distanceMin) {
+          return el.distance >= filters.distanceMin;
+        }
+      });
+
+      res.send(filteredEvents);
+    } else {
+      res.send(events);
+    }
   } finally {
     await client.close();
   }
@@ -502,9 +552,13 @@ app.post("/newchat", async (req, res) => {
     const database = client.db("app-data");
     const chats = database.collection("chats");
 
-    const insertChat = await chats.insertOne(chat);
     const foundChat = await chats.findOne({ chatId: chat.chatId });
-    res.status(201).json({ chat: foundChat });
+    if (foundChat) {
+      return res.status(201).json({ chat: foundChat });
+    } else {
+      const insertChat = await chats.insertOne(chat);
+      res.status(201).json({ chat: insertChat });
+    }
   } finally {
     await client.close();
   }
@@ -523,8 +577,15 @@ app.put("/invitefriend", async (req, res) => {
     const updateDocument = {
       $push: { friends: invitedUserId },
     };
-    const user = await users.updateOne(query, updateDocument);
-    res.send(user);
+
+    const user = await users.findOne(query);
+
+    if (user.friends.includes(invitedUserId)) {
+      res.send("Already invited");
+    } else {
+      const inviteFriend = await users.updateOne(query, updateDocument);
+      res.send(inviteFriend);
+    }
   } finally {
     await client.close();
   }
