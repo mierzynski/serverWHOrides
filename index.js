@@ -2,11 +2,11 @@ const dotenv = require("dotenv").config();
 const PORT = 8000;
 const express = require("express");
 const { MongoClient } = require("mongodb");
+const ObjectId = require("mongodb").ObjectId;
 const { v4: uuidv4 } = require("uuid");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
-var bodyParser = require("body-parser");
 
 const uri =
   "mongodb+srv://" +
@@ -461,6 +461,46 @@ app.post("/message", async (req, res) => {
       }
     );
     res.send(insertedMessage);
+  } finally {
+    await client.close();
+  }
+});
+
+app.post("/joinevent", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { participant, eventId } = req.body;
+  const oid = new ObjectId(eventId);
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const events = database.collection("events");
+
+    const query = {
+      _id: oid,
+      "participants.user_id": participant.user_id,
+    };
+
+    const findParticipant = await events.findOne(query);
+
+    if (findParticipant) {
+      res.send("You are already a participant");
+    } else {
+      const insertedParticipant = await events.findOneAndUpdate(
+        { _id: oid },
+        {
+          $push: {
+            participants: {
+              date: participant.date,
+              user_id: participant.user_id,
+              isAccepted: participant.isAccepted,
+            },
+          },
+        }
+      );
+
+      res.send("Joined to event");
+    }
   } finally {
     await client.close();
   }
