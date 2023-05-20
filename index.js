@@ -53,6 +53,7 @@ app.post("/signup", async (req, res) => {
       pace_max: "",
       pace_min: "",
       friends: [],
+      events: [],
     };
     const insertedUser = await users.insertOne(data);
 
@@ -475,6 +476,7 @@ app.post("/joinevent", async (req, res) => {
     await client.connect();
     const database = client.db("app-data");
     const events = database.collection("events");
+    const users = database.collection("users");
 
     const query = {
       _id: oid,
@@ -495,6 +497,15 @@ app.post("/joinevent", async (req, res) => {
               user_id: participant.user_id,
               isAccepted: participant.isAccepted,
             },
+          },
+        }
+      );
+
+      const addEventToUser = await users.findOneAndUpdate(
+        { user_id: participant.user_id },
+        {
+          $push: {
+            events: participant.user_id,
           },
         }
       );
