@@ -54,6 +54,7 @@ app.post("/signup", async (req, res) => {
       pace_min: "",
       friends: [],
       events: [],
+      images: [],
     };
     const insertedUser = await users.insertOne(data);
 
@@ -561,9 +562,14 @@ app.get("/friends", async (req, res) => {
       })
       .toArray();
 
+    const allFriends = await users
+      .find({ user_id: { $in: foundUserFriendsIds.friends } })
+      .toArray();
+
     res.send({
       pendingFriends: pendingFriends,
       acceptedFriends: acceptedFriends,
+      allFriends: allFriends,
     });
   } finally {
     await client.close();
@@ -598,17 +604,24 @@ app.post("/newchat", async (req, res) => {
   const client = new MongoClient(uri);
   const chat = req.body.newChat;
 
+  const chatId1 = chat.members_id[1] + ";" + chat.members_id[0];
+  const chatId2 = chat.members_id[0] + ";" + chat.members_id[1];
   try {
     await client.connect();
     const database = client.db("app-data");
     const chats = database.collection("chats");
 
-    const foundChat = await chats.findOne({ chatId: chat.chatId });
-    if (foundChat) {
-      return res.status(201).json({ chat: foundChat });
+    const foundChat1 = await chats.findOne({ chatId: chatId1 });
+    const foundChat2 = await chats.findOne({ chatId: chatId2 });
+
+    if (foundChat1) {
+      res.status(201).json({ chat: foundChat1 });
+    } else if (foundChat2) {
+      res.status(201).json({ chat: foundChat1 });
     } else {
       const insertChat = await chats.insertOne(chat);
-      res.status(201).json({ chat: insertChat });
+      const foundInsertedChat = await chats.findOne({ chatId: chat.chatId });
+      res.status(201).json({ chat: foundInsertedChat });
     }
   } finally {
     await client.close();
@@ -700,6 +713,44 @@ app.put("/acceptfriend", async (req, res) => {
     };
     const updateFriend = await users.updateOne(query, updateDocument);
     res.send(updateFriend);
+  } finally {
+    await client.close();
+  }
+});
+
+app.put("/uploadphoto", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { user_id, img } = req.body;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: user_id };
+    const updateDocument = {
+      $push: { images: img },
+    };
+    const uploadPhoto = await users.updateOne(query, updateDocument);
+    res.send(uploadPhoto);
+  } finally {
+    await client.close();
+  }
+});
+
+app.put("/deletephoto", async (req, res) => {
+  const client = new MongoClient(uri);
+  const { user_id, img } = req.body;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("users");
+
+    const query = { user_id: user_id };
+    const deletePhoto = { $pull: { images: img } };
+    const updateImages = await users.updateOne(query, deletePhoto);
+    res.send(updateImages);
   } finally {
     await client.close();
   }
