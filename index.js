@@ -44,6 +44,7 @@ app.post("/signup", async (req, res) => {
       name: name,
       birth_year: parseInt(birthDate),
       location: location,
+      description: "",
       rates: [],
       comments: [],
       bike_types: ["", "", ""],
@@ -81,10 +82,12 @@ app.post("/login", async (req, res) => {
 
     const user = await users.findOne({ email });
 
-    const correctPassword = await bcrypt.compare(
-      password,
-      user.hashed_password
-    );
+    if (user) {
+      const correctPassword = await bcrypt.compare(
+        password,
+        user.hashed_password
+      );
+    }
 
     if (user && correctPassword) {
       const token = jwt.sign(user, email, {
@@ -103,37 +106,30 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.put("/users", async (req, res) => {
+app.put("/updateuser", async (req, res) => {
   const client = new MongoClient(uri);
-  const {
-    userId,
-    location,
-    description,
-    distance_min,
-    distance_max,
-    pace_min,
-    pace_max,
-  } = req.body;
+  const { userData } = req.body;
 
   try {
     await client.connect();
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const query = { user_id: userId };
+    const query = { user_id: userData.user_id };
     const data = {
       $set: {
-        location: location,
-        description: description,
-        distance_min: distance_min,
-        distance_max: distance_max,
-        pace_min: pace_min,
-        pace_max: pace_max,
+        location: userData.location,
+        description: userData.description,
+        distance_min: userData.distance_min,
+        distance_max: userData.distance_max,
+        pace_min: userData.pace_min,
+        pace_max: userData.pace_max,
+        bike_types: userData.bike_types,
+        surface_types: userData.surface_types,
       },
     };
     const insertUser = await users.updateOne(query, data);
     res.send(insertUser);
-    //const insertedUser = await users.insertOne(data);
   } finally {
     await client.close();
   }
