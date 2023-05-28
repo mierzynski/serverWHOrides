@@ -87,18 +87,18 @@ app.post("/login", async (req, res) => {
         password,
         user.hashed_password
       );
-    }
 
-    if (user && correctPassword) {
-      const token = jwt.sign(user, email, {
-        expiresIn: 60 * 24,
-      });
-      res
-        .status(201)
-        .json({ token, userId: user.user_id, userName: user.name });
+      if (user && correctPassword) {
+        const token = jwt.sign(user, email, {
+          expiresIn: 60 * 24,
+        });
+        res
+          .status(201)
+          .json({ token, userId: user.user_id, userName: user.name });
+      }
+    } else {
+      res.status(400).json("Invalid Credentials");
     }
-
-    res.status(400).json("Invalid Credentials");
   } catch (err) {
     console.log(err);
   } finally {
@@ -289,7 +289,7 @@ app.post("/createevent", async (req, res) => {
     };
     const insertedEvent = await events.insertOne(data);
 
-    res.status(insertedEvent);
+    res.send(insertedEvent);
   } catch (err) {
     console.log(err);
   }
@@ -374,6 +374,25 @@ app.get("/findevents", async (req, res) => {
     } else {
       res.send(events);
     }
+  } finally {
+    await client.close();
+  }
+});
+
+app.get("/userevents", async (req, res) => {
+  const client = new MongoClient(uri);
+  const user_id = req.query.user_id;
+
+  try {
+    await client.connect();
+    const database = client.db("app-data");
+    const users = database.collection("events");
+
+    const query = { author_id: user_id };
+
+    const events = await users.find(query).toArray();
+
+    res.send(events);
   } finally {
     await client.close();
   }
@@ -652,8 +671,6 @@ app.put("/createcomment", async (req, res) => {
         }
       });
     }
-
-    console.log(newComment);
 
     if (isExist) {
       res.send("Comment already exist");
