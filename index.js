@@ -307,69 +307,38 @@ app.get("/findevents", async (req, res) => {
     const events = await users.find().toArray();
 
     if (filters) {
-      const filteredEvents = events.filter(function (el) {
-        if (
-          filters.distanceMin &&
-          filters.distanceMax &&
-          filters.avgPaceMin &&
-          filters.avgPaceMax &&
-          filters.surface &&
-          filters.startLocation
-        ) {
-          return (
-            el.distance >= filters.distanceMin &&
-            el.distance <= filters.distanceMax &&
-            el.avg_pace >= filters.avgPaceMin &&
-            el.avg_pace <= filters.avgPaceMax &&
-            el.surface == filters.surface &&
-            el.location == filters.startLocation
-          );
-        } else if (
-          filters.distanceMin &&
-          filters.distanceMax &&
-          filters.avgPaceMin &&
-          filters.avgPaceMax &&
-          filters.surface
-        ) {
-          return (
-            el.distance >= filters.distanceMin &&
-            el.distance <= filters.distanceMax &&
-            el.avg_pace >= filters.avgPaceMin &&
-            el.avg_pace <= filters.avgPaceMax &&
-            el.surface == filters.surface
-          );
-        } else if (
-          filters.distanceMin &&
-          filters.distanceMax &&
-          filters.avgPaceMin &&
-          filters.avgPaceMax
-        ) {
-          return (
-            el.distance >= filters.distanceMin &&
-            el.distance <= filters.distanceMax &&
-            el.avg_pace >= filters.avgPaceMin &&
-            el.avg_pace <= filters.avgPaceMax
-          );
-        } else if (
-          filters.distanceMin &&
-          filters.distanceMax &&
-          filters.avgPaceMin
-        ) {
-          return (
-            el.distance >= filters.distanceMin &&
-            el.distance <= filters.distanceMax &&
-            el.avg_pace >= filters.avgPaceMin
-          );
-        } else if (filters.distanceMin && filters.distanceMax) {
-          return (
-            el.distance >= filters.distanceMin &&
-            el.distance <= filters.distanceMax
-          );
-        } else if (filters.distanceMin) {
-          return el.distance >= filters.distanceMin;
-        }
-      });
+      let filteredEvents = events;
 
+      if (filters.avgPaceMax) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.avg_pace <= filters.avgPaceMax
+        );
+      }
+      if (filters.avgPaceMin) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.avg_pace >= filters.avgPaceMin
+        );
+      }
+      if (filters.distanceMax) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.distance <= filters.distanceMax
+        );
+      }
+      if (filters.distanceMin) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.distance >= filters.distanceMin
+        );
+      }
+      if (filters.startLocation) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.location == filters.startLocation
+        );
+      }
+      if (filters.surface) {
+        filteredEvents = filteredEvents.filter(
+          (event) => event.surface == filters.surface
+        );
+      }
       res.send(filteredEvents);
     } else {
       res.send(events);
