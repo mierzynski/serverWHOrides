@@ -161,98 +161,114 @@ app.get("/findusers", async (req, res) => {
     const database = client.db("app-data");
     const users = database.collection("users");
 
-    const queryAge = {
-      $and: [
-        { birth_year: { $gte: parseInt(filters.birth_max) } },
-        { birth_year: { $lte: parseInt(filters.birth_min) } },
-      ],
-    };
+    // const queryAge = {
+    //   $and: [
+    //     { birth_year: { $gte: parseInt(filters.birth_max) } },
+    //     { birth_year: { $lte: parseInt(filters.birth_min) } },
+    //   ],
+    // };
 
-    const usersByAge = await users.find(queryAge).toArray();
+    // const usersByAge = await users.find(queryAge).toArray();
 
-    let filteredUsers_partOne = usersByAge.filter(function (el) {
-      if (
-        el.location &&
-        el.distance_max &&
-        el.distance_min &&
-        el.pace_max &&
-        el.pace_min
-      ) {
-        return (
-          el.location == filters.location &&
-          el.distance_max <= filters.distance_max &&
-          el.distance_min >= filters.distance_min &&
-          el.pace_max <= filters.pace_max &&
-          el.pace_min >= filters.pace_min
-        );
-      } else if (
-        el.location &&
-        el.distance_max &&
-        el.distance_min &&
-        el.pace_max
-      ) {
-        return (
-          el.location == filters.location &&
-          el.distance_max <= filters.distance_max &&
-          el.distance_min >= filters.distance_min &&
-          el.pace_max <= filters.pace_max
-        );
-      } else if (el.location && el.distance_max && el.distance_min) {
-        return (
-          el.location == filters.location &&
-          el.distance_max <= filters.distance_max &&
-          el.distance_min >= filters.distance_min
-        );
-      } else if (el.location && el.distance_max) {
-        return (
-          el.location == filters.location &&
-          el.distance_max <= filters.distance_max
-        );
-      } else if (el.location) {
-        return el.location == filters.location;
-      }
-    });
-    // let filteredUsers_full = usersByAge.filter(function (el) {
-    //   const containTypes = (element) =>
-    //     element === "road" || element === "gravel" || element === "mtb";
-    //   let notEmptyBikeTypes = [];
-    //   let notEmptySurfaceTypes = [];
+    // let filteredUsers_partOne = usersByAge.filter(function (el) {
     //   if (
-    //     filters.bike_types[0] + filters.bike_types[1] + filters.bike_types[2] !=
-    //     ""
+    //     el.location &&
+    //     el.distance_max &&
+    //     el.distance_min &&
+    //     el.pace_max &&
+    //     el.pace_min
     //   ) {
-    //     notEmptyBikeTypes = filters.bike_types.filter(containTypes);
-    //   }
-    //   if (
-    //     filters.surface_types[0] +
-    //       filters.surface_types[1] +
-    //       filters.surface_types[2] !=
-    //     ""
+    //     return (
+    //       el.location == filters.location &&
+    //       el.distance_max <= filters.distance_max &&
+    //       el.distance_min >= filters.distance_min &&
+    //       el.pace_max <= filters.pace_max &&
+    //       el.pace_min >= filters.pace_min
+    //     );
+    //   } else if (
+    //     el.location &&
+    //     el.distance_max &&
+    //     el.distance_min &&
+    //     el.pace_max
     //   ) {
-    //     notEmptySurfaceTypes = filters.surface_types.filter(containTypes);
-    //   }
-
-    //   if (notEmptyBikeTypes.length != 0 && notEmptySurfaceTypes.length != 0) {
-    //     console.log("not empty");
-    //   } else if (notEmptyBikeTypes.length != 0) {
-    //     if (el.bike_types) {
-    //       return (
-    //         el.bike_types[0] == "road" ||
-    //         el.bike_types[1] == "gravel" ||
-    //         el.bike_types[2] == "mtb"
-    //       );
-    //     }
-    //   } else if (notEmptySurfaceTypes.length != 0) {
-    //     console.log("not empty surface types");
+    //     return (
+    //       el.location == filters.location &&
+    //       el.distance_max <= filters.distance_max &&
+    //       el.distance_min >= filters.distance_min &&
+    //       el.pace_max <= filters.pace_max
+    //     );
+    //   } else if (el.location && el.distance_max && el.distance_min) {
+    //     return (
+    //       el.location == filters.location &&
+    //       el.distance_max <= filters.distance_max &&
+    //       el.distance_min >= filters.distance_min
+    //     );
+    //   } else if (el.location && el.distance_max) {
+    //     return (
+    //       el.location == filters.location &&
+    //       el.distance_max <= filters.distance_max
+    //     );
+    //   } else if (el.location) {
+    //     return el.location == filters.location;
     //   }
     // });
 
-    // console.log(filteredUsers_full);
+    // if (filteredUsers_partOne.length > 0) {
+    //   res.send(filteredUsers_partOne);
+    // } else {
+    //   res.send(usersByAge);
+    // }
 
-    if (filteredUsers_partOne.length > 0) {
-      res.send(filteredUsers_partOne);
+    const allUsers = await users.find().toArray();
+
+    if (filters) {
+      let filteredUsers = allUsers;
+
+      if (filters.pace_max) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.pace_max >= filters.avgPaceMax
+        );
+      }
+
+      if (filters.pace_min) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.pace_min >= filters.pace_min
+        );
+      }
+
+      if (filters.distance_min) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.distance_min >= filters.distance_min
+        );
+      }
+
+      if (filters.distance_max) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.distance_max >= filters.distance_max
+        );
+      }
+
+      if (filters.birth_min) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.birth_year <= filters.birth_min
+        );
+      }
+
+      if (filters.birth_max) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.birth_year >= filters.birth_max
+        );
+      }
+
+      if (filters.location) {
+        filteredUsers = filteredUsers.filter(
+          (user) => user.location == filters.location
+        );
+      }
+
+      res.send(filteredUsers);
     } else {
-      res.send(usersByAge);
+      res.send(allUsers);
     }
   } finally {
     await client.close();
@@ -302,9 +318,9 @@ app.get("/findevents", async (req, res) => {
   try {
     await client.connect();
     const database = client.db("app-data");
-    const users = database.collection("events");
+    const eventsDb = database.collection("events");
 
-    const events = await users.find().toArray();
+    const events = await eventsDb.find().toArray();
 
     if (filters) {
       let filteredEvents = events;
